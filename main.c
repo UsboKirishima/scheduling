@@ -222,6 +222,100 @@ float evaluate_sjf_tr(timeType **schedule,
     return averageTurnaroundTime;
 }
 
+float evaluate_rr_tw(timeType **schedule, unsigned short processes_, timeType time_quantum)
+{
+    timeType *waitingTime = (timeType *)malloc(processes_ * sizeof(timeType));
+    timeType *remainingTime = (timeType *)malloc(processes_ * sizeof(timeType));
+    timeType currentTime = 0;
+    int completed = 0;
+
+    for (int i = 0; i < processes_; i++)
+    {
+        remainingTime[i] = schedule[i][1];
+        waitingTime[i] = 0;
+    }
+
+    while (completed != processes_)
+    {
+        for (int i = 0; i < processes_; i++)
+        {
+            if (remainingTime[i] > 0)
+            {
+                if (remainingTime[i] > time_quantum)
+                {
+                    currentTime += time_quantum;
+                    remainingTime[i] -= time_quantum;
+                }
+                else
+                {
+                    currentTime += remainingTime[i];
+                    waitingTime[i] = currentTime - schedule[i][1] - schedule[i][0];
+                    remainingTime[i] = 0;
+                    completed++;
+                }
+            }
+        }
+    }
+
+    float totalWaitingTime = 0.0;
+    for (int i = 0; i < processes_; i++)
+    {
+        totalWaitingTime += waitingTime[i];
+    }
+
+    free(waitingTime);
+    free(remainingTime);
+
+    return totalWaitingTime / processes_;
+}
+
+float evaluate_rr_tr(timeType **schedule, unsigned short processes_, timeType time_quantum)
+{
+    timeType *turnaroundTime = (timeType *)malloc(processes_ * sizeof(timeType));
+    timeType *remainingTime = (timeType *)malloc(processes_ * sizeof(timeType));
+    timeType currentTime = 0;
+    int completed = 0;
+
+    for (int i = 0; i < processes_; i++)
+    {
+        remainingTime[i] = schedule[i][1];
+        turnaroundTime[i] = 0;
+    }
+
+    while (completed != processes_)
+    {
+        for (int i = 0; i < processes_; i++)
+        {
+            if (remainingTime[i] > 0)
+            {
+                if (remainingTime[i] > time_quantum)
+                {
+                    currentTime += time_quantum;
+                    remainingTime[i] -= time_quantum;
+                }
+                else
+                {
+                    currentTime += remainingTime[i];
+                    turnaroundTime[i] = currentTime - schedule[i][0];
+                    remainingTime[i] = 0;
+                    completed++;
+                }
+            }
+        }
+    }
+
+    float totalTurnaroundTime = 0.0;
+    for (int i = 0; i < processes_; i++)
+    {
+        totalTurnaroundTime += turnaroundTime[i];
+    }
+
+    free(turnaroundTime);
+    free(remainingTime);
+
+    return totalTurnaroundTime / processes_;
+}
+
 int main(void)
 {
     timeType ti_current, di_current;
@@ -280,11 +374,16 @@ int main(void)
     }
 
     printf("\n\n___SJF________________________________________________");
-    print_processes(schedule, processes);
+    // print_processes(schedule, processes);
     printf("\nTw = %f        Tr = %f",
            evaluate_sjf_tw(schedule, processes),
            evaluate_sjf_tr(schedule, processes));
 
+    printf("\n\n___RR________________________________________________");
+    printf("\nTw = %f        Tr = %f",
+           evaluate_rr_tw(schedule, processes, time_quantum),
+           evaluate_rr_tr(schedule, processes, time_quantum));
+           
     for (int i = 0; i < processes; i++)
     {
         free(schedule[i]);
